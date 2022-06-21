@@ -15,8 +15,9 @@ class MovieTableViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        let movie = API(baseUrl: "https://api.themoviedb.org/3/discover/movie?api_key=328c283cd27bd1877d9080ccb1604c91")
-        movie.getMovies(endPoint: "&primary_release_date.lte=2016-12-31&sort_by=release_date.desc&page=1")
+        
+        let movie = API(baseUrl: "https://api.themoviedb.org/3/movie/now_playing?api_key=328c283cd27bd1877d9080ccb1604c91")
+        movie.getMovies(endPoint: "&language=en-US")
         movie.completionHandler{ [weak self] (movies, status, message) in
             if status {
                 guard let self = self else {return}
@@ -27,11 +28,6 @@ class MovieTableViewController: UITableViewController {
             }
         }
     }
-
-//    baseUrl for posterimage "https://image.tmdb.org/t/p/w500"
-    
-    
-    
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return movies.results.count
@@ -43,10 +39,13 @@ class MovieTableViewController: UITableViewController {
         cell.movieTitle?.text = movie.title
         cell.popularityLabel?.text = "\(movie.popularity!)"
         
+        if movie.poster != nil {
+            let imgUrl = "https://image.tmdb.org/t/p/w500" + movie.poster!
+            cell.posterImage.downloaded(from: imgUrl)
+        } else {
+            cell.posterImage.image = UIImage(named: "NoPoster")
+        }
+        
         return cell
-    }
-    
-    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 150
     }
 }
