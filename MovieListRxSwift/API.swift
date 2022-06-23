@@ -6,39 +6,39 @@
 //
 
 import Foundation
-import Alamofire
+import RxSwift
 
-//Getting API
-class API {
+protocol MovieServiceProtocol {
+    func fetchMovies() -> Observable<Movies>
+}
 
-    fileprivate var baseUrl = ""
-    typealias moviesCallBack = (_ movies:Movies?, _ status:Bool, _ message:String) ->Void
-    var callBack:moviesCallBack?
+class MovieService: MovieServiceProtocol {
     
-    init(baseUrl: String) {
-        self.baseUrl = baseUrl
+    func fetchMovies() -> Observable<Movies> {
         
-    }
-    
-    func getMovies(endPoint: String) {
-        AF.request(self.baseUrl + endPoint)
-            .response { (responseData) in
-                guard let data = responseData.data else {
-                    self.callBack?(nil, false, "")
-                    print("Error")
+        return Observable.create { observer -> Disposable in
+            
+            
+            //URL API
+            let task = URLSession.shared.dataTask(with: URL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=328c283cd27bd1877d9080ccb1604c91&language=en-US&page=1a")!) {
+                data, _, _ in
+                
+                guard let data = data else {
+                    observer.onError(NSError(domain: "", code: -1, userInfo: nil))
                     return
                 }
                 do {
                     let movies = try JSONDecoder().decode(Movies.self, from: data)
-                    self.callBack?(movies, true, "")
+                    observer.onNext(movies)
                 } catch {
-                    self.callBack?(nil, false, error.localizedDescription)
-                    print(String(describing: error))
+                    observer.onError(error)
                 }
             }
-    }
-    
-    func completionHandler(callBack:@escaping moviesCallBack) {
-        self.callBack = callBack
+            task.resume()
+            
+            return Disposables.create {
+                task.cancel()
+            }
+        }
     }
 }

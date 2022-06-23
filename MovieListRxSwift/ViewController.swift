@@ -6,46 +6,58 @@
 //
 
 import UIKit
-//import RxSwift
-//import RxCocoa
+import RxSwift
+import RxCocoa
 
 class MovieTableViewController: UITableViewController {
     
-    var movies = Movies()
+    private var viewModel: MovieListViewModel!
+    
+    override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
+        super.init(nibName: nil, bundle: nil)
+        setup()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+    
+    private func setup() {
+        viewModel = MovieListViewModel()
+    }
+
+    let bag = DisposeBag()
     
     override func viewDidLoad() {
         super.viewDidLoad()
+
         
-        let movie = API(baseUrl: "https://api.themoviedb.org/3/movie/now_playing?api_key=328c283cd27bd1877d9080ccb1604c91")
-        movie.getMovies(endPoint: "&language=en-US")
-        movie.completionHandler{ [weak self] (movies, status, message) in
-            if status {
-                guard let self = self else {return}
-                guard let _movies = movies else {return}
-                
-                self.movies = _movies
-                self.tableView.reloadData()
-            }
-        }
+        tableView.dataSource = nil
+        bindTableView()
+        
+        //Prints data in console
+        let service = MovieService()
+        service.fetchMovies().subscribe(onNext: { movies in
+            print(movies)
+        }).disposed(by: bag)
+        
     }
     
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return movies.results.count
-    }
-
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! MovieTableViewCell
-        let movie = movies.results[indexPath.row]
-        cell.movieTitle?.text = movie.title
-        cell.popularityLabel?.text = "\(movie.popularity!)"
+    //Bind data to the tableView
+    private func bindTableView() {
         
-        if movie.poster != nil {
-            let imgUrl = "https://image.tmdb.org/t/p/w500" + movie.poster!
-            cell.posterImage.downloaded(from: imgUrl)
-        } else {
-            cell.posterImage.image = UIImage(named: "NoPoster")
-        }
-        
-        return cell
+        viewModel.fetchMovieViewModels().observe(on: MainScheduler.instance)
+            .bind(to: tableView.rx.items(cellIdentifier: "cell", cellType: MovieTableViewCell.self)) { index, viewModel, cell in
+                cell.movieTitle?.text = viewModel.displayTitle
+                cell.popularityLabel?.text = viewModel.displayPopularity
+                
+                guard let img = viewModel.displayPoster else {
+                    cell.posterImage.image = UIImage(named: "NoPoster")
+                    return
+                }
+                cell.posterImage.downloaded(from: "https://image.tmdb.org/t/p/w500" + img)
+                
+            }.disposed(by: bag)
     }
 }
