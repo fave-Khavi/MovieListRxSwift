@@ -73,10 +73,16 @@
                             </tableViewCell>
                         </prototypes>
                         <connections>
-                            <outlet property="dataSource" destination="tEQ-pA-Dah" id="ol3-W7-jlP"/>
-                            <outlet property="delegate" destination="tEQ-pA-Dah" id="FTO-jX-ptV"/>
+                            <outlet property="dataSource" destination="tEQ-pA-Dah" id="yrD-1W-XCs"/>
+                            <outlet property="delegate" destination="tEQ-pA-Dah" id="3Gk-qP-2Ta"/>
                         </connections>
                     </tableView>
+                    <refreshControl key="refreshControl" opaque="NO" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" enabled="NO" contentHorizontalAlignment="center" contentVerticalAlignment="center" id="dWB-7e-ltA">
+                        <autoresizingMask key="autoresizingMask"/>
+                        <connections>
+                            <action selector="refresh:" destination="tEQ-pA-Dah" eventType="valueChanged" id="td2-yy-aA9"/>
+                        </connections>
+                    </refreshControl>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="UMV-5j-Z3S" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>

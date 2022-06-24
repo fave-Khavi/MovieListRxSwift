@@ -20,7 +20,7 @@ class MovieService: MovieServiceProtocol {
             
             
             //URL API
-            let task = URLSession.shared.dataTask(with: URL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=328c283cd27bd1877d9080ccb1604c91&language=en-US&page=1a")!) {
+            let task = URLSession.shared.dataTask(with: URL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=328c283cd27bd1877d9080ccb1604c91&language=en-US&page=1")!) {
                 data, _, _ in
                 
                 guard let data = data else {
