@@ -22,9 +22,8 @@ class MovieTableViewController: UIViewController, UITableViewDelegate, UIScrollV
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        viewModel.fetchMovies(pagination: false)
+        viewModel.fetchMovies()
         bindTableView()
-        bindMore()
         let refreshControl = UIRefreshControl()
         refreshControl.addTarget(self, action: #selector(refresh), for: .valueChanged)
         tableView.refreshControl = refreshControl
@@ -69,35 +68,26 @@ class MovieTableViewController: UIViewController, UITableViewDelegate, UIScrollV
             }
             
             }.disposed(by: bag)
-    }
-    
-    private func createSpinerFooter() -> UIView {
-        let footerView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.size.width, height: 100))
-        let spinner = UIActivityIndicatorView()
-        spinner.center = footerView.center
-        footerView.addSubview(spinner)
-        spinner.startAnimating()
         
-        return footerView
-    }
-    
-    func bindMore() {
-            tableView.rx.didScroll.subscribe{ [weak self] _ in
-                guard let self = self else { return }
-                let offSetY = self.tableView.contentOffset.y
-                let contentHeight = self.tableView.contentSize.height
-                
-                if offSetY > (contentHeight - self.tableView.frame.size.height - 100) {
-                    guard !self.viewModel.isFetchInProgress else {
-                        return
-                    }
-                    self.viewModel.fetchMovies(pagination: true)
-                        DispatchQueue.main.async {
-                            self.tableView.tableFooterView = nil
-                        }
+        tableView.rx.didScroll.subscribe{ [weak self] _ in
+            guard let self = self else { return }
+            let offSetY = self.tableView.contentOffset.y
+            let contentHeight = self.tableView.contentSize.height
+            
+            if offSetY > (contentHeight - self.tableView.frame.size.height - 10) {
+                guard !self.viewModel.isFetchInProgress else {
+                    print("Already fetching")
+                    return
                 }
-            }.disposed(by: bag)
-        }
+                self.viewModel.fetchMovies()
+                    DispatchQueue.main.async {
+                        self.tableView.tableFooterView = nil
+                        self.tableView.reloadData()
+                    }
+            }
+        }.disposed(by: bag)
+    }
+
     
 }
     

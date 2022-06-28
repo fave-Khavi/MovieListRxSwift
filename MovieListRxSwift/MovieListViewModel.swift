@@ -17,13 +17,12 @@ class MovieListViewModel {
     
         var isFetchInProgress = false
         
-    func fetchMovies(pagination: Bool = false) {
+    func fetchMovies() {
             
             if page < 67 {
             
-                if pagination {
-                    isFetchInProgress = true
-                }
+            isFetchInProgress = true
+                
             
             let url = URL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=328c283cd27bd1877d9080ccb1604c91&language=en-US&page=\(page)")
             
@@ -35,7 +34,6 @@ class MovieListViewModel {
                 do {
                     let movies = try JSONDecoder().decode(Movies.self, from: data)
                     self.users.onNext(movies.results)
-                    self.isFetchInProgress = false
                 } catch {
                     self.users.onError(error)
                 }
@@ -45,10 +43,9 @@ class MovieListViewModel {
             }
             print(page)
             
-        page = page + 1
+        page += 1
         
-        if pagination {
-            self.isFetchInProgress = false
-        }
+        isFetchInProgress = false
+        
     }
 }
