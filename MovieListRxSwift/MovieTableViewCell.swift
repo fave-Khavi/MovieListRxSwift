@@ -9,22 +9,20 @@ import UIKit
 
 class MovieTableViewCell: UITableViewCell {
 
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: .value1, reuseIdentifier:"MovieTableViewCell")
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+       super.init(coder: aDecoder)
+    }
+    
+    
     @IBOutlet weak var movieTitle: UILabel!
     
     @IBOutlet weak var popularityLabel: UILabel!
     
     @IBOutlet weak var posterImage: UIImageView!
-    
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        // Initialization code
-    }
-
-    override func setSelected(_ selected: Bool, animated: Bool) {
-        super.setSelected(selected, animated: animated)
-
-        // Configure the view for the selected state
-    }
 
 }
 
@@ -48,3 +46,4 @@ extension UIImageView {
         downloaded(from: url, contentMode: mode)
     }
 }
+

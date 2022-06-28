@@ -9,45 +9,40 @@ import UIKit
 import RxSwift
 import RxCocoa
 
-class MovieTableViewController: UITableViewController {
+class MovieTableViewController: UIViewController, UITableViewDelegate, UIScrollViewDelegate {
     
-    private var viewModel: MovieListViewModel!
- 
+    private var viewModel = MovieListViewModel()
     
-    //Init viewModel to viewController
-    override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
-        super.init(nibName: nil, bundle: nil)
-        setup()
-    }
+    private var bag = DisposeBag()
     
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        setup()
-    }
+    var isPaginating = false
     
-    private func setup() {
-        viewModel = MovieListViewModel()
-    }
-    
-    let bag = DisposeBag()
+    @IBOutlet weak var tableView: UITableView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        tableView.dataSource = nil
+        viewModel.fetchMovies(pagination: false)
         bindTableView()
-        
-        
-        //Prints data in console
-        let service = MovieService()
-        service.fetchMovies().subscribe(onNext: { movies in
-            print("fetch data")
-        }).disposed(by: bag)
-        
+        bindMore()
+        let refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: #selector(refresh), for: .valueChanged)
+        tableView.refreshControl = refreshControl
     }
     
     //Pull to refresh
-    @IBAction func refresh(_ sender: UIRefreshControl) {
+    @objc func refresh(refreshControl: UIRefreshControl) {
+        
+        tableView.dataSource = nil
+        print("refreshing data")
+        bindTableView()
+        print("refreshed data")
+        tableView.refreshControl?.endRefreshing()
+        tableView.reloadData()
+    }
+    
+    //Used for tableViewController
+   /* @IBAction func refresh(_ sender: UIRefreshControl) {
         tableView.dataSource = nil
         print("refreshing data")
         
@@ -56,21 +51,54 @@ class MovieTableViewController: UITableViewController {
         
         tableView.refreshControl?.endRefreshing()
         tableView.reloadData()
-    }
+    } */
+    
     
     //Bind data to the tableView
-    private func bindTableView() {
-        viewModel.fetchMovieViewModels().observe(on: MainScheduler.instance)
-            .bind(to: tableView.rx.items(cellIdentifier: "cell", cellType: MovieTableViewCell.self)) { index, viewModel, cell in
-                cell.movieTitle?.text = viewModel.displayTitle
-                cell.popularityLabel?.text = viewModel.displayPopularity
+    func bindTableView() {
+        
+        viewModel.users.bind(to: tableView.rx.items(cellIdentifier: "cell", cellType: MovieTableViewCell.self)) { index, viewModel, cell in
+                cell.movieTitle?.text = viewModel.title
+                cell.popularityLabel?.text = "\(viewModel.popularity!)"
                 
-                guard let img = viewModel.displayPoster else {
-                    cell.posterImage.image = UIImage(named: "NoPoster")
-                    return
-                }
-                cell.posterImage.downloaded(from: "https://image.tmdb.org/t/p/w500" + img)
-                
+            if viewModel.poster != nil {
+                let imgUrl = "https://image.tmdb.org/t/p/w500" + viewModel.poster!
+                cell.posterImage.downloaded(from: imgUrl)
+            } else {
+                cell.posterImage.image = UIImage(named: "NoPoster")
+            }
+            
             }.disposed(by: bag)
     }
+    
+    private func createSpinerFooter() -> UIView {
+        let footerView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.size.width, height: 100))
+        let spinner = UIActivityIndicatorView()
+        spinner.center = footerView.center
+        footerView.addSubview(spinner)
+        spinner.startAnimating()
+        
+        return footerView
+    }
+    
+    func bindMore() {
+            tableView.rx.didScroll.subscribe{ [weak self] _ in
+                guard let self = self else { return }
+                let offSetY = self.tableView.contentOffset.y
+                let contentHeight = self.tableView.contentSize.height
+                
+                if offSetY > (contentHeight - self.tableView.frame.size.height - 100) {
+                    guard !self.viewModel.isFetchInProgress else {
+                        return
+                    }
+                    self.viewModel.fetchMovies(pagination: true)
+                        DispatchQueue.main.async {
+                            self.tableView.tableFooterView = nil
+                        }
+                }
+            }.disposed(by: bag)
+        }
+    
 }
+    
+

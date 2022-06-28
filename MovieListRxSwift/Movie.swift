@@ -8,7 +8,7 @@
 import Foundation
 
 //Movie List
-struct Movie: Decodable {
+struct Result: Decodable {
     var title: String!
     var popularity: Double!
     var poster: String!
