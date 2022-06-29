@@ -10,7 +10,7 @@ import Foundation
 struct Movies: Decodable {
     var page: Int!
     var total_pages: Int!
-    var results: [Result]
+    var results: [Movie]?
     
     enum CodingKeys: String, CodingKey {
         case page = "page"
@@ -24,3 +24,4 @@ struct Movies: Decodable {
         self.results = []
     }
 }
+

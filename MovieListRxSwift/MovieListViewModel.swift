@@ -11,41 +11,59 @@ import RxCocoa
 
 class MovieListViewModel {
     
-        var users = BehaviorSubject(value: Movies().results)
-
-        var page = 1
     
-        var isFetchInProgress = false
-        
-    func fetchMovies() {
-            
-            if page < 67 {
-            
-            isFetchInProgress = true
-                
-            
-            let url = URL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=328c283cd27bd1877d9080ccb1604c91&language=en-US&page=\(page)")
-            
-            
-            let task = URLSession.shared.dataTask(with: url!) { (data, response, error) in
-                guard let data = data else {
-                    return
-                }
-                do {
-                    let movies = try JSONDecoder().decode(Movies.self, from: data)
-                    self.users.onNext(movies.results)
-                } catch {
-                    self.users.onError(error)
-                }
-            }
-            
-            task.resume()
-            }
-            print(page)
-            
-        page += 1
-        
-        isFetchInProgress = false
-        
+    private let bag = DisposeBag()
+    private let movieAPI = MovieAPI()
+
+    let movies = BehaviorRelay<[Movie]>(value: [])
+    
+    private var page = 1
+    private var totalPages = 1
+    private var isFetchInProgress = false
+    
+    let fetchMoreMovies = PublishSubject<Void>()
+    
+    init() {
+        bind()
     }
+
+   private func bind() {
+
+        fetchMoreMovies.subscribe { [weak self] _ in
+            guard let self = self else { return }
+            self.fetchMovies(page: self.page)
+        }
+        .disposed(by: bag)
+    }
+        
+    func fetchMovies(page: Int) {
+        if isFetchInProgress { return }
+        
+        if page > totalPages  {
+            isFetchInProgress = false
+            return
+        }
+       
+        isFetchInProgress = true
+        
+        movieAPI.getMovie(page: page) { [weak self] movieData in
+            self?.handleMovies(movie: movieData)
+            self?.isFetchInProgress = false
+            
+        }
+    }
+    
+    private func handleMovies(movie: Movies) {
+
+        totalPages = movie.total_pages
+        if page == 1, let allMovies = movie.results {
+            self.totalPages = movie.total_pages
+            movies.accept(allMovies)
+        } else if let movie = movie.results {
+            let previousMovies = movies.value
+            movies.accept(previousMovies + movie)
+        }
+        page += 1
+    }
+
 }

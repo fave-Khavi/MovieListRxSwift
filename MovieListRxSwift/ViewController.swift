@@ -12,18 +12,19 @@ import RxCocoa
 class MovieTableViewController: UIViewController, UITableViewDelegate, UIScrollViewDelegate {
     
     private var viewModel = MovieListViewModel()
-    
     private var bag = DisposeBag()
     
-    var isPaginating = false
     
     @IBOutlet weak var tableView: UITableView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        viewModel.fetchMovies()
         bindTableView()
+        DispatchQueue.main.async {
+            self.viewModel.fetchMoreMovies.onNext(())
+        }
+        //Pull to refresh
         let refreshControl = UIRefreshControl()
         refreshControl.addTarget(self, action: #selector(refresh), for: .valueChanged)
         tableView.refreshControl = refreshControl
@@ -40,23 +41,11 @@ class MovieTableViewController: UIViewController, UITableViewDelegate, UIScrollV
         tableView.reloadData()
     }
     
-    //Used for tableViewController
-   /* @IBAction func refresh(_ sender: UIRefreshControl) {
-        tableView.dataSource = nil
-        print("refreshing data")
-        
-        bindTableView()
-        print("refreshed data")
-        
-        tableView.refreshControl?.endRefreshing()
-        tableView.reloadData()
-    } */
     
-    
-    //Bind data to the tableView
     func bindTableView() {
-        
-        viewModel.users.bind(to: tableView.rx.items(cellIdentifier: "cell", cellType: MovieTableViewCell.self)) { index, viewModel, cell in
+        //Bind data to the tableView
+        viewModel.movies.bind(to: tableView.rx.items(cellIdentifier: "cell", cellType: MovieTableViewCell.self)) { index, viewModel, cell in
+            
                 cell.movieTitle?.text = viewModel.title
                 cell.popularityLabel?.text = "\(viewModel.popularity!)"
                 
@@ -68,27 +57,17 @@ class MovieTableViewController: UIViewController, UITableViewDelegate, UIScrollV
             }
             
             }.disposed(by: bag)
-        
-        tableView.rx.didScroll.subscribe{ [weak self] _ in
+    
+        //Get more data when scrolled to bottom
+        tableView.rx.didScroll.subscribe { [weak self] _ in
             guard let self = self else { return }
             let offSetY = self.tableView.contentOffset.y
             let contentHeight = self.tableView.contentSize.height
-            
-            if offSetY > (contentHeight - self.tableView.frame.size.height - 10) {
-                guard !self.viewModel.isFetchInProgress else {
-                    print("Already fetching")
-                    return
-                }
-                self.viewModel.fetchMovies()
-                    DispatchQueue.main.async {
-                        self.tableView.tableFooterView = nil
-                        self.tableView.reloadData()
-                    }
+
+            if offSetY > (contentHeight - self.tableView.frame.size.height - 100) {
+                self.viewModel.fetchMoreMovies.onNext(())
             }
-        }.disposed(by: bag)
+        }
+        .disposed(by: bag)
     }
-
-    
 }
-    
-
